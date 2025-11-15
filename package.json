@@ -12,6 +12,7 @@
     "@emotion/react": "^11.11.3",
     "@emotion/styled": "^11.11.3",
     "@mui/material": "^5.15.18",
+    "@mui/x-data-grid": "^8.18.0",
     "axios": "^1.7.7",
     "formik": "^2.4.5",
     "mobx": "^6.9.0",
