@@ -1,0 +1,12 @@
+:root { --brand: #673ab7; }
+html, body, #root { height: 100%; margin: 0; font-family: Inter, Roboto, Arial; }
+.shell { display: flex; min-height: 100%; }
+.sidenav { width: 240px; background: #f6f3ff; border-right: 1px solid #e2d9ff; padding: 16px; }
+.sidenav a { display: block; padding: 8px 12px; color: #2c2066; text-decoration: none; border-radius: 8px; }
+.sidenav a:hover { background: #e9e3ff; }
+.content { flex: 1; padding: 24px; }
+.card { background: white; border: 1px solid #eee; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,0.06); padding: 16px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #eee; padding: 8px; }
+button { background: var(--brand); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+button.secondary { background: #fff; color: var(--brand); border: 1px solid var(--brand); }
