@@ -1,15 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { countries as seed } from '../CountryData';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { TextField, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, Alert } from '@mui/material';
 import { observer } from 'mobx-react';
-import { apiService } from '../services/ApiService.js'; // Thay thế authStore bằng apiService
+import { 
+  TextField, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  CircularProgress, 
+  Alert,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
+} from '@mui/material';
+import { apiService } from '../services/ApiService.js'; // Thay thế authStore
 
 const API = import.meta.env.VITE_API || 'http://localhost:8071';
 
-const Countries = observer(() => {
+const departments = [
+  { id: 1, code: 'HR', name: 'Human Resources', description: 'HR Department', parentId: null },
+  { id: 2, code: 'IT', name: 'Information Technology', description: 'IT Department', parentId: null },
+  { id: 3, code: 'FIN', name: 'Finance', description: 'Finance Department', parentId: null }
+];
+
+const Department = observer(() => {
   const [rows, setRows] = useState([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -20,58 +37,51 @@ const Countries = observer(() => {
   const schema = Yup.object({ 
     code: Yup.string().required('Code is required'), 
     name: Yup.string().required('Name is required'), 
-    description: Yup.string() 
+    description: Yup.string(),
+    parentId: Yup.number().nullable()
   });
   
   const form = useFormik({ 
-    initialValues: { code:'', name:'', description:'' }, 
+    initialValues: { code:'', name:'', description:'', parentId: null }, 
     validationSchema: schema, 
     onSubmit: async (values) => {
       try {
         if (editing !== null) {
-          // Sử dụng apiService không cần auth headers
-          await apiService.put(`/api/hrCountry/${rows[editing].id}`, values);
+          await apiService.put(`/api/hrDepartment/${rows[editing].id}`, values);
         } else {
-          await apiService.post('/api/hrCountry', values);
+          await apiService.post('/api/hrDepartment', values);
         }
         setOpen(false);
         setEditing(null);
-        fetchCountries();
+        fetchDepartments();
       } catch (error) {
         setError(error.message);
       }
     } 
   });
 
-  const fetchCountries = async () => {
+  const fetchDepartments = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Sử dụng apiService không cần auth headers
-      const data = await apiService.post('/api/hrCountry/searchByPage', 
+      const data = await apiService.post('/api/hrDepartment/searchByPage', 
         { pageIndex: 0, pageSize: 20, keyword }
       );
-      setRows((data?.content || []).map(x => ({
-        id: x.id,
-        code: x.code,
-        name: x.name,
-        description: x.description
-      })));
+      setRows(data?.content || []);
     } catch (error) {
       console.warn('API failed, using mock data:', error.message);
-      setRows(seed);
+      setRows(departments);
       setError('Using mock data - API connection failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id, index) => {
-    if (confirm('Are you sure you want to delete this country?')) {
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this department?')) {
       try {
-        // Sử dụng apiService không cần auth headers
-        await apiService.delete(`/api/hrCountry/${id}`);
-        fetchCountries();
+        await apiService.delete(`/api/hrDepartment/${id}`);
+        fetchDepartments();
       } catch (error) {
         setError('Delete failed: ' + error.message);
       }
@@ -79,7 +89,7 @@ const Countries = observer(() => {
   };
 
   useEffect(() => {
-    fetchCountries();
+    fetchDepartments();
   }, [keyword]);
 
   if (loading) {
@@ -92,7 +102,7 @@ const Countries = observer(() => {
 
   return (
     <div>
-      <h2>Countries Management</h2>
+      <h2>Department Management</h2>
       
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -106,7 +116,7 @@ const Countries = observer(() => {
           label="Search" 
           value={keyword} 
           onChange={e => setKeyword(e.target.value)} 
-          placeholder="Search countries..."
+          placeholder="Search departments..."
         />
         <button 
           onClick={() => { 
@@ -123,7 +133,7 @@ const Countries = observer(() => {
             cursor: 'pointer'
           }}
         >
-          Add New Country
+          Add New Department
         </button>
       </div>
       
@@ -133,15 +143,17 @@ const Countries = observer(() => {
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Code</th>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Name</th>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Description</th>
+            <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Parent</th>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r.code + "-" + i} style={{ borderBottom: '1px solid #ddd' }}>
+            <tr key={r.id} style={{ borderBottom: '1px solid #ddd' }}>
               <td style={{ padding: '12px' }}>{r.code}</td>
               <td style={{ padding: '12px' }}>{r.name}</td>
               <td style={{ padding: '12px' }}>{r.description}</td>
+              <td style={{ padding: '12px' }}>{r.parentId ? `Parent ${r.parentId}` : 'None'}</td>
               <td style={{ padding: '12px' }}>
                 <button 
                   className="secondary" 
@@ -163,7 +175,7 @@ const Countries = observer(() => {
                   Edit
                 </button>
                 <button 
-                  onClick={() => handleDelete(r.id, i)}
+                  onClick={() => handleDelete(r.id)}
                   style={{
                     backgroundColor: '#f44336',
                     color: 'white',
@@ -182,7 +194,7 @@ const Countries = observer(() => {
       </table>
       
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>{editing !== null ? 'Edit Country' : 'Add Country'}</DialogTitle>
+        <DialogTitle>{editing !== null ? 'Edit Department' : 'Add Department'}</DialogTitle>
         <DialogContent sx={{display:'flex',flexDirection:'column',gap:2,pt:2}}>
           <TextField 
             label="Code" 
@@ -208,6 +220,22 @@ const Countries = observer(() => {
             multiline
             rows={3}
           />
+          <FormControl fullWidth>
+            <InputLabel>Parent Department</InputLabel>
+            <Select
+              name="parentId"
+              value={form.values.parentId || ''}
+              onChange={form.handleChange}
+              label="Parent Department"
+            >
+              <MenuItem value="">None</MenuItem>
+              {rows.map(dept => (
+                <MenuItem key={dept.id} value={dept.id}>
+                  {dept.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <button 
@@ -243,4 +271,4 @@ const Countries = observer(() => {
   );
 });
 
-export default Countries;
+export default Department;
